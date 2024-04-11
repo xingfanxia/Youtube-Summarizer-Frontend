@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { unified } from 'unified';
 import markdown from 'remark-parse';
@@ -9,6 +9,7 @@ import 'github-markdown-css';
 
 export default function YoutubeViewer() {
   const [content, setContent] = useState('');
+  const rawMarkdownRef = useRef(''); // Ref to store raw markdown
   const router = useRouter();
 
   useEffect(() => {
@@ -26,12 +27,6 @@ export default function YoutubeViewer() {
       const { done, value } = await reader.read();
       if (done) {
         console.log('Stream finished.');
-        if (buffer) {
-          // Process any remaining buffer
-          processMarkdown(buffer).then(html => {
-            setContent((prevContent) => prevContent + html);
-          });
-        }
         return;
       }
 
@@ -46,6 +41,9 @@ export default function YoutubeViewer() {
         // The rest is kept in the buffer for the next chunk
         buffer = buffer.substring(lastNewLineIndex + 2);
 
+        // Update rawMarkdownRef with the complete segment
+        rawMarkdownRef.current += completeSegment;
+
         // Process and update content with the complete segment
         processMarkdown(completeSegment).then(html => {
           setContent((prevContent) => prevContent + html);
@@ -58,7 +56,6 @@ export default function YoutubeViewer() {
     readStream();
   }
 
-  // Process and display the Markdown content
   async function processMarkdown(markdownText) {
     try {
       const file = await unified()
@@ -74,7 +71,20 @@ export default function YoutubeViewer() {
     }
   }
 
+  const copyToClipboard = () => {
+    // Copy the raw markdown text from the ref
+    navigator.clipboard.writeText(rawMarkdownRef.current).then(() => {
+      alert('Markdown text copied to clipboard!');
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+    });
+  };
+
   return (
-    <div className="markdown-body" dangerouslySetInnerHTML={{ __html: content }} />
+    <div style={{ padding: '20px', maxWidth: '800px', margin: 'auto' }}>
+        <h1 style={{ textAlign: 'center' }}>Video Summary</h1>
+        <div className="markdown-body" style={{ border: '1px solid #ddd', padding: '20px', marginBottom: '20px', borderRadius: '5px' }} dangerouslySetInnerHTML={{ __html: content }} />
+        <button onClick={copyToClipboard} style={{ display: 'block', margin: '20px auto', padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>Copy Markdown</button>
+    </div>
   );
 }
