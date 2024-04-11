@@ -126,7 +126,7 @@ export default function YoutubeViewer() {
 
     return (
       <div style={{ padding: '20px', maxWidth: '90%', margin: 'auto' }}>
-          <h1 style={{ textAlign: 'center' }}>Video Summary</h1>
+          <h1 style={{ textAlign: 'center' }}>Youtube Video Chaptered Summary</h1>
           {videoUrl && <iframe width="100%" height="800" src={`https://www.youtube.com/embed/${router.query.v}`} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>}
           <div style={{ marginTop: '20px', textAlign: 'center' }}>
             <input type="text" value={inputUrl} onChange={handleUrlChange} placeholder="Enter YouTube video URL" style={{ padding: '10px', width: '60%', marginRight: '10px' }} />
