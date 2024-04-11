@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { marked } from 'marked';
+import { unified } from 'unified';
+import markdown from 'remark-parse';
+import gfm from 'remark-gfm';
+import remark2rehype from 'remark-rehype';
+import stringify from 'rehype-stringify';
+import 'github-markdown-css';
 
 export default function YoutubeViewer() {
   const [content, setContent] = useState('');
@@ -21,9 +26,11 @@ export default function YoutubeViewer() {
       const { done, value } = await reader.read();
       if (done) {
         console.log('Stream finished.');
-        // Process any remaining buffer
         if (buffer) {
-          setContent((prevContent) => prevContent + marked(buffer));
+          // Process any remaining buffer
+          processMarkdown(buffer).then(html => {
+            setContent((prevContent) => prevContent + html);
+          });
         }
         return;
       }
@@ -39,8 +46,10 @@ export default function YoutubeViewer() {
         // The rest is kept in the buffer for the next chunk
         buffer = buffer.substring(lastNewLineIndex + 2);
 
-        // Update content with the complete segment
-        setContent((prevContent) => prevContent + marked(completeSegment));
+        // Process and update content with the complete segment
+        processMarkdown(completeSegment).then(html => {
+          setContent((prevContent) => prevContent + html);
+        });
       }
 
       readStream(); // Read the next chunk
@@ -49,9 +58,23 @@ export default function YoutubeViewer() {
     readStream();
   }
 
+  // Process and display the Markdown content
+  async function processMarkdown(markdownText) {
+    try {
+      const file = await unified()
+        .use(markdown)
+        .use(gfm)
+        .use(remark2rehype)
+        .use(stringify)
+        .process(markdownText);
+      return String(file);
+    } catch (error) {
+      console.error('Error processing markdown:', error);
+      return '';
+    }
+  }
+
   return (
-    <div>
-      <div dangerouslySetInnerHTML={{ __html: content }} />
-    </div>
+    <div className="markdown-body" dangerouslySetInnerHTML={{ __html: content }} />
   );
 }
